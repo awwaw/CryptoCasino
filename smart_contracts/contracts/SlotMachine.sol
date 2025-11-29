@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 contract SlotMachine {
     
     address public owner;
-    uint256 public constant MIN_BET = 0.001 ether;
+    uint256 public constant MIN_BET = 0.00001 ether;
 
     uint256 private nonce; 
 
