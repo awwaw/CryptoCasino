@@ -5,7 +5,7 @@ import './App.css';
 
 import { TransactionsTable } from './components/TransactionsTable';
 
-const CONTRACT_ADDRESS = "0xe12D1f41756FD1Dc0e06993976F7c63FB36DAEa8";
+const CONTRACT_ADDRESS = "0xDA4c8d6bc840F38a5587ea30283b4ba86102AF98";
 
 const ICONS = ['🍒', '🍋', '🍇', '🍉', '💎', '7️⃣'];
 
