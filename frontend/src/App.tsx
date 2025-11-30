@@ -19,8 +19,14 @@ function App() {
   const [slots, setSlots] = useState<number[]>([0, 0, 0]); // images idx
   const [isSpinning, setIsSpinning] = useState(false); // isSpinning
   const [status, setStatus] = useState("Connect wallet to play.");
+
+  // Bets
   const [betAmount, setBetAmount] = useState<string>("0.001");
   const [maxBet, setMaxBet] = useState<string>("0");
+
+  // Admin panel
+  const [isOwner, setIsOwner] = useState(false);
+  const [adminDepositAmount, setAdminDepositAmount] = useState<string>("0.01");
 
   useEffect(() => {
     checkIfWalletIsConnected();
@@ -47,6 +53,12 @@ function App() {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (account) {
+      checkOwner(account);
+    }
+  }, [account]);
 
   const checkIfWalletIsConnected = async () => {
     if (window.ethereum) {
@@ -85,6 +97,69 @@ function App() {
       setStatus("Connection failed.");
     }
   };
+
+  const checkOwner = async (userAddress: string) => {
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
+
+      const ownerAddress = await contract.owner();
+      if (ownerAddress.toLowerCase() == userAddress.toLowerCase()) {
+        setIsOwner(true);
+        console.log("Owner logged in");
+      } else {
+        setIsOwner(false);
+      }
+    } catch (e) {
+      console.error("Couldn't whether current user is admin: ", e);
+    }
+  }
+
+  const handleDeposit = async () => {
+    if (!adminDepositAmount) return;
+
+    try {
+      setStatus("Processing deposit");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const tx = await signer.sendTransaction({
+        to: CONTRACT_ADDRESS,
+        value: ethers.parseEther(adminDepositAmount),
+      });
+
+      await tx.wait();
+      setStatus("Deposit successfull");
+      fetchMaxBet();
+      updateBalance(await signer.getAddress(), provider);
+    } catch (e) {
+      console.error("Couldn't handle deposit operation: ", e);
+    }
+  }
+
+  const withdrawAll = async () => {
+    try {
+      setStatus("Withdrawing all money from casino (😈)");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+
+      const balance = await provider.getBalance(CONTRACT_ADDRESS);
+      if (balance == 0n) {
+        alert("Casino is empty:(");
+        return;
+      }
+
+      const tx = await contract.withdraw(account, balance);
+      await tx.wait();
+
+      setStatus("Withdrawal successful");
+      fetchMaxBet();
+      updateBalance(await signer.getAddress(), provider);
+    } catch (e) {
+      console.error("Couldn't withdraw funds: ", e);
+    }
+  }
 
   const spin = async () => {
     if (!account || !window.ethereum) return;
@@ -175,7 +250,6 @@ function App() {
     <div className="app-container">
       <header>
         <h1>🎰 Sepolia Casino</h1>
-        {!account && <p className="subtitle">Connect your wallet to start</p>}
       </header>
 
       <div className="machine-container">
@@ -187,72 +261,69 @@ function App() {
 
         <div className="controls">
           {!account ? (
-             <button className="btn-connect" onClick={connectWallet}>
-                Connect Metamask
-             </button>
+             <button className="btn-connect" onClick={connectWallet}>Connect Wallet</button>
           ) : (
              <>
                <div className="info-panel">
                   <div className="info-item">
-                    <span className="label">Wallet:</span>
-                    <span className="value">{account.slice(0,6)}...{account.slice(-4)}</span>
+                    <span>Me: {account.slice(0,6)}...</span>
+                    <span>{parseFloat(balance).toFixed(4)} ETH</span>
                   </div>
                   <div className="info-item">
-                    <span className="label">Your balance:</span>
-                    <span className="value">{parseFloat(balance).toFixed(4)} ETH</span>
+                     <span style={{color: '#aaa'}}>Bet Limit:</span>
+                     <span style={{color: '#facc15'}}>{parseFloat(maxBet).toFixed(4)} ETH</span>
                   </div>
                </div>
 
                <div className="bet-controls">
-                  <div className="bet-info">
-                      <label>Bet (ETH):</label>
-                      <span className="max-safe">
-                          Max bet: {parseFloat(maxBet).toFixed(4)}
-                      </span>
-                  </div>
-
-                  <div className="bet-input-group">
-                      <input 
-                        type="number" 
-                        step="0.0001"
-                        min="0.00001"
-                        max={maxBet}
-                        value={betAmount}
-                        onChange={(e) => setBetAmount(e.target.value)}
-                        className="bet-input"
-                        placeholder="0.001"
-                      />
-                      
-                      <button 
-                        className="btn-max"
-                        onClick={() => setBetAmount(maxBet)}
-                        title="Make your bet equal to max bet"
-                      >
-                        MAX
-                      </button>
-                  </div>
+                  <input 
+                    type="number" 
+                    className="bet-input"
+                    step="0.0001" 
+                    max={maxBet}
+                    value={betAmount} 
+                    onChange={e => setBetAmount(e.target.value)} 
+                  />
+                  <button className="btn-max" onClick={() => setBetAmount(maxBet)}>MAX</button>
                </div>
 
-               <button 
-                 className="btn-spin" 
-                 onClick={spin} 
-                 disabled={isSpinning}
-               >
-                 {isSpinning ? "SPINNING..." : "SPIN"}
+               <button className="btn-spin" onClick={spin} disabled={isSpinning}>
+                 {isSpinning ? "..." : "SPIN"}
                </button>
              </>
           )}
         </div>
-        
         <p className="status-text">{status}</p>
       </div>
-      
-      <footer>
-        <p>Smart Contract: <a href={`https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer">Etherscan</a></p>
-      </footer>
+
+      {isOwner && account && (
+          <div className="admin-panel">
+              <h2>👑 Owner Panel</h2>
+              
+              <div className="admin-row">
+                  <div className="admin-group">
+                      <label>Deposit Casino (ETH):</label>
+                      <div style={{display: 'flex', gap: '5px'}}>
+                        <input 
+                            className="bet-input" 
+                            value={adminDepositAmount} 
+                            onChange={e => setAdminDepositAmount(e.target.value)}
+                        />
+                        <button className="btn-admin-action" onClick={handleDeposit}>Deposit</button>
+                      </div>
+                  </div>
+
+                  <div className="admin-group">
+                      <label>Emergency:</label>
+                      <button className="btn-admin-danger" onClick={withdrawAll}>
+                          WITHDRAW ALL FUNDS
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
-
 }
 
 export default App;
