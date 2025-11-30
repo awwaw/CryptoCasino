@@ -23,6 +23,7 @@ smart_contracts/ignition/
 frontend/dist/
 frontend/build/
 frontend/.eslintcache
+frontend/.vite
 
 backend/.gradle/
 backend/build/
