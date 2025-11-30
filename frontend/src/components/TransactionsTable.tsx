@@ -19,7 +19,7 @@ interface PageResponse {
     number: number;
 }
 
-const API_URL = "http://localhost:8080/api/transactions";
+const API_URL = "/api/transactions";
 export function TransactionsTable() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [page, setPage] = useState(0);
