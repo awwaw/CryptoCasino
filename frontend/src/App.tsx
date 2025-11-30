@@ -3,6 +3,8 @@ import { ethers } from 'ethers';
 import abi from './contracts/SlotMachineABI.json'; 
 import './App.css';
 
+import { TransactionsTable } from './components/TransactionsTable';
+
 const CONTRACT_ADDRESS = "0xe12D1f41756FD1Dc0e06993976F7c63FB36DAEa8";
 
 const ICONS = ['🍒', '🍋', '🍇', '🍉', '💎', '7️⃣'];
@@ -318,6 +320,10 @@ function App() {
                       <button className="btn-admin-danger" onClick={withdrawAll}>
                           WITHDRAW ALL FUNDS
                       </button>
+                  </div>
+
+                  <div style={{ marginTop: '30px'}}>
+                    <TransactionsTable />
                   </div>
               </div>
           </div>
