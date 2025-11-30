@@ -17,7 +17,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./smart-contracts
+        working-directory: ./smart_contracts
 
     steps:
       - name: Checkout code

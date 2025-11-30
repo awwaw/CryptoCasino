@@ -11,7 +11,6 @@ yarn-debug.log*
 yarn-error.log*
 
 node_modules/
-package-lock.json* 
 
 smart_contracts/artifacts/
 smart_contracts/cache/
